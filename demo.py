@@ -59,33 +59,37 @@ def demo(args):
     model.eval()
     
     for parent_dir, sub_dirs, images in os.walk(args.data_dir):
-        if "sintel" in parent_dir or "sintel" in sub_dirs:
-            pass
-        else:
-            with torch.no_grad():
+        
+        # prevent out of GPU memory error when inferring over many different image sets
+        torch.cuda.empty_cache()
+        
+        with torch.no_grad():
+            
+            images = tuple(os.path.join(parent_dir, image) for image in images)
+            images = sorted(images)
+
+            for idx, (imfile1, imfile2) in enumerate(zip(images[:-1], images[1:])):
+                image1 = load_image(imfile1)
+                image2 = load_image(imfile2)
+
+                padder = InputPadder(image1.shape)
+                image1, image2 = padder.pad(image1, image2)
+
+                flow_low, flow_up = model(image1, image2, iters=20, test_mode=True)
                 
-                images = tuple(os.path.join(parent_dir, image) for image in images)
-                images = sorted(images)
-
-                for idx, (imfile1, imfile2) in enumerate(zip(images[:-1], images[1:])):
-                    image1 = load_image(imfile1)
-                    image2 = load_image(imfile2)
-
-                    padder = InputPadder(image1.shape)
-                    image1, image2 = padder.pad(image1, image2)
-
-                    flow_low, flow_up = model(image1, image2, iters=20, test_mode=True)
-                    
-                    flo = flow_up[0].permute(1,2,0).cpu().numpy()
-                    flo = flow_viz.flow_to_image(flo)
-                    flow_up = flow_up[0].permute(1,2,0).cpu().numpy()
-                    
-                    image1 = image1[0].permute(1,2,0).cpu().numpy()
-                    
-                    #display_flow(flow_up, None, image1)
+                flow_permuted = flow_up[0].permute(1,2,0).cpu().numpy()
+                # flo_permuted = flow_viz.flow_to_image(flo_permuted)
+                
+                
+                # image1 = image1[0].permute(1,2,0).cpu().numpy()
+                
+                #display_flow(flow_up, None, image1)
+                if "sintel" not in parent_dir:
                     dir_name_for_frame_src = os.path.basename(parent_dir)
-                    output_path = os.path.join(output_dir, dir_name_for_frame_src)
-                    save_flow_image(flow_up, idx, output_path)
+                else:
+                    dir_name_for_frame_src = "sintel/market_2/final"
+                output_path = os.path.join(output_dir, dir_name_for_frame_src, "RAFT")
+                save_flow_image(flow_permuted, idx, output_path)
             
 
 if __name__ == '__main__':
