@@ -1,4 +1,5 @@
 import sys
+import output_640_480
 
 from utils.data_viz import display_flow
 from utils.file_io import save_flow_image
@@ -22,11 +23,13 @@ import demo_frames
 import output
 
 model_dir = os.path.dirname(models.__file__)
-model_path = os.path.join(model_dir, "raft-sintel.pth")
+model_path = os.path.join(model_dir, "raft-kitti.pth")
 
 data_path = os.path.dirname(data.__file__)
 frames_dir = os.path.join(data_path, "frames")
-output_dir = os.path.dirname(output.__file__)
+# output_dir = os.path.dirname(output.__file__)
+output_dir = os.path.dirname(output_640_480.__file__)
+
 
 
 
@@ -58,7 +61,7 @@ def demo(args):
     model.to(DEVICE)
     model.eval()
     
-    for parent_dir, sub_dirs, images in os.walk(args.data_dir):
+    for parent_dir, sub_dirs, images in sorted(os.walk(args.data_dir)):
         
         # prevent out of GPU memory error when inferring over many different image sets
         torch.cuda.empty_cache()
@@ -88,8 +91,8 @@ def demo(args):
                     dir_name_for_frame_src = os.path.basename(parent_dir)
                 else:
                     dir_name_for_frame_src = "sintel/market_2/final"
-                output_path = os.path.join(output_dir, dir_name_for_frame_src, "RAFT")
-                save_flow_image(flow_permuted, idx, output_path)
+                output_path = os.path.join(output_dir, dir_name_for_frame_src, "RAFT_raft-kitti")
+                save_flow_image(flow_permuted, idx, output_path, res=(640, 480))
             
 
 if __name__ == '__main__':
