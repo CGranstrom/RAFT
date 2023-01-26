@@ -2,10 +2,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from memory_profiler import profile
 
-from update import BasicUpdateBlock, SmallUpdateBlock
-from extractor import BasicEncoder, SmallEncoder
-from corr import CorrBlock, AlternateCorrBlock
+from core.update import BasicUpdateBlock, SmallUpdateBlock
+from core.extractor import BasicEncoder, SmallEncoder
+from core.corr import CorrBlock, AlternateCorrBlock
 from core.utils.utils import bilinear_sampler, coords_grid, upflow8
 
 try:
@@ -82,7 +83,7 @@ class RAFT(nn.Module):
         up_flow = up_flow.permute(0, 1, 4, 2, 5, 3)
         return up_flow.reshape(N, 2, 8*H, 8*W)
 
-
+    #@profile
     def forward(self, image1, image2, iters=12, flow_init=None, upsample=True, test_mode=False):
         """ Estimate optical flow between pair of frames """
 
