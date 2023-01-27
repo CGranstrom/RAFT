@@ -1,7 +1,7 @@
 from cmath import sin
 from multiprocessing.pool import RUN
 import sys
-import output_640_480
+from output import opt_flow_output, opt_flow_output_640_480
 
 #from utils.data_viz import display_flow
 #from utils.file_io import save_flow_image
@@ -26,7 +26,6 @@ from timeit import default_timer as timer
 import data
 import models
 import demo_frames
-import output
 import itertools
 
 model_dir = os.path.dirname(models.__file__)
@@ -38,7 +37,7 @@ MODEL_PATHS = [os.path.join(model_dir, "raft-sintel.pth")]#, os.path.join(model_
 DATA_PATH = os.path.dirname(data.__file__)
 FRAMES_DIR = os.path.join(DATA_PATH, "frames_640_480")
 # output_dir = os.path.dirname(output.__file__)
-OUTPUT_DIR = os.path.dirname(output_640_480.__file__)
+OUTPUT_DIR = os.path.dirname(opt_flow_output_640_480.__file__)
 METRICS_REPORT_PATH = os.path.join(DATA_PATH, "../system_resource_metrics")
 
 
