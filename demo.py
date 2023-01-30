@@ -29,7 +29,7 @@ import itertools
 
 model_dir = os.path.dirname(models.__file__)
 #model_path = os.path.join(model_dir, "raft-kitti.pth")
-MODEL_PATHS = [os.path.join(model_dir, "raft-sintel.pth")]#, os.path.join(model_dir, "raft-sintel.pth")]
+MODEL_PATHS = [os.path.join(model_dir, "raft-sintel.pth"), os.path.join(model_dir, "raft-kitti.pth")]
 
 
 
@@ -86,7 +86,7 @@ def demo(args):
         experiment_label = f"TOTAL for {os.path.basename(model_path)} {CLOCK_TYPE} time"
         dir_names = [experiment_label]
 
-        for parent_dir, _, images in sorted(os.walk(args.data_dir)):
+        for parent_dir, _, images in sorted(os.walk(args.data_dir)):  # default is FRAMES_DIR
             
             if not images:
                 continue
@@ -114,7 +114,7 @@ def demo(args):
         
         TRIAL_CTR=0            
 
-        for parent_dir, sub_dirs, images in sorted(os.walk(args.data_dir)):
+        for parent_dir, sub_dirs, images in sorted(os.walk(args.data_dir)):  #default is FRAMES_DIR
             
             # prevent out of GPU memory error when inferring over many different image sets
             torch.cuda.empty_cache()
@@ -227,7 +227,7 @@ def demo(args):
                         
                         #display_flow(flow_up, None, image1)
                         dir_name_for_frame_src = os.path.basename(parent_dir)
-                        output_path = os.path.join(FLOW_OUTPUT_DIR, dir_name_for_frame_src, "RAFT_raft-kitti")
+                        output_path = os.path.join(FLOW_OUTPUT_DIR, dir_name_for_frame_src, f"RAFT_{os.path.basename(model_path)}")
                         save_flow_image(flow_permuted, idx, output_path, res=(640, 480))
         
         #uncomment below for runtime stats
