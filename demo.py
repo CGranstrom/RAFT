@@ -1,10 +1,10 @@
 from cmath import sin
 from multiprocessing.pool import RUN
 import sys
-from output import opt_flow_output, opt_flow_output_640_480
+from output import opt_flow_output, opt_flow_output_640_480, scratch, system_resource_metrics_output
 
 #from utils.data_viz import display_flow
-#from utils.file_io import save_flow_image
+from utils.file_io import save_flow_image
 sys.path.append('core')
 
 import argparse
@@ -13,7 +13,6 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
-import yappi
 
 #from raft import RAFT
 from core.utils import flow_viz
@@ -37,17 +36,16 @@ MODEL_PATHS = [os.path.join(model_dir, "raft-sintel.pth")]#, os.path.join(model_
 DATA_PATH = os.path.dirname(data.__file__)
 FRAMES_DIR = os.path.join(DATA_PATH, "frames_640_480")
 # output_dir = os.path.dirname(output.__file__)
-OUTPUT_DIR = os.path.dirname(opt_flow_output_640_480.__file__)
-METRICS_REPORT_PATH = os.path.join(DATA_PATH, "../system_resource_metrics")
+#OUTPUT_DIR = os.path.dirname(opt_flow_output_640_480.__file__)
+#METRICS_REPORT_DIR = os.path.join(DATA_PATH, "../system_resource_metrics")
 
+FLOW_OUTPUT_DIR = os.path.dirname(scratch.__file__)
+METRICS_REPORT_DIR = os.path.dirname(system_resource_metrics_output.__file__)
 
-DIRS_TO_SKIP = ("34539_fire_helmet_cam_2014_extra", "sintel")
-PATHS_TO_SKIP = tuple(os.path.join(FRAMES_DIR, _dir) for _dir in DIRS_TO_SKIP)
-
-RUN_MODE = "perf_testing"
-# RUN_MODE = "gen_images"
-NUM_IMAGES_IN_DIR = 208
-clock_types = ["wall"]#, "cpu"]
+#RUN_MODE = "perf_testing"
+RUN_MODE = "gen_images"
+NUM_IMAGES_PER_DIR = 5
+clock_types = ["wall"]
 
 
 
@@ -84,14 +82,13 @@ def demo(args):
     
     for model_path, CLOCK_TYPE in itertools.product(MODEL_PATHS, clock_types):
         print(f"NOW ON MODEL {model_path}, clock type {CLOCK_TYPE}\n\n\n\n\n")
-        #yappi.set_clock_type(CLOCK_TYPE)
         
         experiment_label = f"TOTAL for {os.path.basename(model_path)} {CLOCK_TYPE} time"
         dir_names = [experiment_label]
 
         for parent_dir, _, images in sorted(os.walk(args.data_dir)):
             
-            if not images or parent_dir in PATHS_TO_SKIP:
+            if not images:
                 continue
             if "sintel" in parent_dir:
                 dir_names.append("sintel")
@@ -128,11 +125,11 @@ def demo(args):
                     
                     
 
-                    if not images or parent_dir in PATHS_TO_SKIP:
+                    if not images:
                         continue                 
                     images = tuple(os.path.join(parent_dir, image) for image in images)
                     images = sorted(images)
-                    images = images[:NUM_IMAGES_IN_DIR]
+                    images = images[:NUM_IMAGES_PER_DIR]
                     
                     (dir_num_trials,dir_agg_runtime,dir_mean_runtime,dir_median_runtime,dir_std_dev_runtime) = (0, 0, 0, 0, 0)
                         
@@ -215,7 +212,7 @@ def demo(args):
                 
                     images = tuple(os.path.join(parent_dir, image) for image in images)
                     images = sorted(images)
-                    images = images[:NUM_IMAGES_IN_DIR]
+                    images = images[:NUM_IMAGES_PER_DIR]
 
                     for idx, (imfile1, imfile2) in enumerate(zip(images[:-1], images[1:])):
                         image1 = load_image(imfile1)
@@ -229,39 +226,38 @@ def demo(args):
                         flow_permuted = flow_up[0].permute(1,2,0).cpu().numpy()
                         
                         #display_flow(flow_up, None, image1)
-                        if "sintel" not in parent_dir:
-                            dir_name_for_frame_src = os.path.basename(parent_dir)
-                        else:
-                            dir_name_for_frame_src = "sintel/market_2/final"
-                        output_path = os.path.join(OUTPUT_DIR, dir_name_for_frame_src, "RAFT_raft-kitti")
-                        #save_flow_image(flow_permuted, idx, output_path, res=(640, 480))
+                        dir_name_for_frame_src = os.path.basename(parent_dir)
+                        output_path = os.path.join(FLOW_OUTPUT_DIR, dir_name_for_frame_src, "RAFT_raft-kitti")
+                        save_flow_image(flow_permuted, idx, output_path, res=(640, 480))
         
-        total_runtime = sum(total_runtimes)
-        total_mean_runtime = np.mean(total_runtimes)
-        total_median_runtime = np.median(total_runtimes)
-        total_std_dev_runtime = np.std(total_runtimes)
-        total_num_trials = len(total_runtimes)
+        #uncomment below for runtime stats
         
-        tmp_dict = {"dir_agg_runtime": total_runtime, "dir_mean_runtime": total_mean_runtime, "dir_median_runtime": total_median_runtime, "dir_std_dev_runtime":total_std_dev_runtime, "dir_num_trials": total_num_trials, "image_res": np.nan}
+        # total_runtime = sum(total_runtimes)
+        # total_mean_runtime = np.mean(total_runtimes)
+        # total_median_runtime = np.median(total_runtimes)
+        # total_std_dev_runtime = np.std(total_runtimes)
+        # total_num_trials = len(total_runtimes)
         
-        run_stats.loc[experiment_label, tmp_dict.keys()] = tmp_dict.values()
+        # tmp_dict = {"dir_agg_runtime": total_runtime, "dir_mean_runtime": total_mean_runtime, "dir_median_runtime": total_median_runtime, "dir_std_dev_runtime":total_std_dev_runtime, "dir_num_trials": total_num_trials, "image_res": np.nan}
+        
+        # run_stats.loc[experiment_label, tmp_dict.keys()] = tmp_dict.values()
 
-        # run_stats.loc[experiment_label] = {
-        #     "dir_agg_runtime": total_runtime,
-        #     "dir_mean_runtime": total_mean_runtime,
-        #     "dir_median_runtime": total_median_runtime,
-        #     "dir_std_dev_runtime": total_std_dev_runtime,
-        #     "dir_num_trials": total_num_trials,
-        #     "image_res": np.nan,
-        #     }
+        # # run_stats.loc[experiment_label] = {
+        # #     "dir_agg_runtime": total_runtime,
+        # #     "dir_mean_runtime": total_mean_runtime,
+        # #     "dir_median_runtime": total_median_runtime,
+        # #     "dir_std_dev_runtime": total_std_dev_runtime,
+        # #     "dir_num_trials": total_num_trials,
+        # #     "image_res": np.nan,
+        # #     }
         
         
-        run_stats.to_csv(
-            os.path.join(
-                METRICS_REPORT_PATH,
-                f"{os.path.basename(model_path)}_{CLOCK_TYPE}_runtimes_640_480_timer_not_yappi.csv",
-            )
-        )    
+        # run_stats.to_csv(
+        #     os.path.join(
+        #         METRICS_REPORT_DIR,
+        #         f"{os.path.basename(model_path)}_{CLOCK_TYPE}_runtimes_640_480_timer_not_yappi.csv",
+        #     )
+        # )    
 
 if __name__ == '__main__':
     
