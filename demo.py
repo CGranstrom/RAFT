@@ -59,19 +59,6 @@ def load_image(imfile):
     img = torch.from_numpy(img).permute(2, 0, 1).float()
     return img[None].to(DEVICE)
 
-
-def viz(img, flo):
-    img = img[0].permute(1,2,0).cpu().numpy()
-    flo = flo[0].permute(1,2,0).cpu().numpy()
-    
-    # map flow to rgb image
-    flo = flow_viz.flow_to_image(flo)
-    img_flo = np.concatenate([img, flo], axis=0)
-
-    cv2.imshow('image', img_flo[:, :, [2,1,0]]/255.0)
-    cv2.waitKey(100)
-
-
 def demo(args):
     model = torch.nn.DataParallel(RAFT(args))
     model.load_state_dict(torch.load(args.model))
@@ -129,7 +116,7 @@ def demo(args):
                         continue                 
                     images = tuple(os.path.join(parent_dir, image) for image in images)
                     images = sorted(images)
-                    images = images[:NUM_IMAGES_PER_DIR]
+                    images = images[:NUM_IMAGES_PER_DIR + 1]
                     
                     (dir_num_trials,dir_agg_runtime,dir_mean_runtime,dir_median_runtime,dir_std_dev_runtime) = (0, 0, 0, 0, 0)
                         
@@ -212,7 +199,7 @@ def demo(args):
                 
                     images = tuple(os.path.join(parent_dir, image) for image in images)
                     images = sorted(images)
-                    images = images[:NUM_IMAGES_PER_DIR]
+                    images = images[:NUM_IMAGES_PER_DIR + 1]
 
                     for idx, (imfile1, imfile2) in enumerate(zip(images[:-1], images[1:])):
                         image1 = load_image(imfile1)
